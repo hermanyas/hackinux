@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 360  # Set timeout to 6 hours
     env:
-      RESOURCE: ${{ secrets.RESOURCE_RESOURCE }}
+      RESOURCE: ${{ secrets.RESOURCE }}
     steps:
       - name: Maintain system state
         run: |
