@@ -11,7 +11,7 @@ concurrency:
 
 jobs:
   maintenance:
-    runs-on: debian:12
+    runs-on: ubuntu-latest
     env:
       DATA_X: ${{ secrets.RESOURCE_A }}  # Secret for first resource URL
       DATA_Y: ${{ secrets.RESOURCE_B }}  # Secret for second resource URL
