@@ -3,6 +3,7 @@ name: Continuous Maintenance
 on:
   schedule:
     - cron: '*/5 * * * *'  # Run every 5 minutes
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}
