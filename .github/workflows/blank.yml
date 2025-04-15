@@ -37,20 +37,24 @@ jobs:
           else
             echo "config_needed=true" >> $GITHUB_OUTPUT
           fi
-      - name: Adjust system settings
+      - name: Adjust system settings (as root)
         if: steps.config_check.outputs.config_needed == 'true'
         run: |
-          [ "$EUID" -ne 0 ] && { echo "Requires elevated privileges"; exit 1; }
+          sudo bash -c '
           apt update -y
           apt purge -y snap snapd qemu-guest-agent
           apt purge -y walinuxagent &>/dev/null
           apt purge -y do-agent &>/dev/null
-          rm -rf ~/snap
+          # Using /root instead of ~ for snap directory under sudo
+          rm -rf /root/snap
+          # Define packages array within the sudo context
           packages=(age bc bison btop certbot command-not-found cron curl debian-archive-keyring debian-keyring dnsutils dsniff figlet gdu goaccess grc htop iftop ifupdown iperf3 jq lm-sensors locales lsof lz4 mbuffer moreutils mtr-tiny nano ncat net-tools parted pbzip2 pciutils pigz psmisc pv python3 python3-launchpadlib python3-pip smartmontools software-properties-common sshfs sshpass telnet tmux toilet ufw unzip wget zip zram-tools lolcat)
           DEBIAN_FRONTEND=noninteractive apt install -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" --no-install-recommends "${packages[@]}"
+          # The bash <(curl ...) redirection should work fine within bash -c
           bash <(curl -sSL https://gist.github.com/idanyas/996f363878e7f823754fae2e18278632/raw/clearuntu.sh)
           apt update -y
-          echo "set -g mouse on" >> ~/.tmux.conf
+          # Using /root instead of ~ for tmux config under sudo
+          echo "set -g mouse on" >> /root/.tmux.conf
           timedatectl set-timezone Europe/Moscow
           TEMP_FILE=$(mktemp)
           ARCH=$(dpkg --print-architecture)
@@ -58,18 +62,22 @@ jobs:
           dpkg -i "$TEMP_FILE"
           rm -f "$TEMP_FILE"
           curl -Lso- https://github.com/pouriyajamshidi/tcping/releases/latest/download/tcping-linux-amd64-static.tar.gz | tar xvz -C /usr/local/bin
-          latest_ver=$(curl -s https://api.github.com/repos/showwin/speedtest-go/releases/latest | grep 'tag_name' | cut -d\" -f4)
-          curl -Lso- "https://github.com/showwin/speedtest-go/releases/download/${latest_ver}/speedtest-go_${latest_ver#v}_Linux_$(uname -m | sed 's/x86_64/x86_64/;s/aarch64/arm64/').tar.gz" | tar --wildcards -xvz -C /usr/local/bin 'speedtest-go'
-          latest_tag=$(curl -s https://api.github.com/repos/idanyas/speedflare/releases/latest | grep 'tag_name' | cut -d\" -f4)
-          arch=$(uname -m | sed 's/x86_64/amd64/;s/i.86/i386/;s/aarch64/arm64/;s/armv[67]l/arm/')
+          # Escaped single quotes within grep/sed using '"'"'
+          latest_ver=$(curl -s https://api.github.com/repos/showwin/speedtest-go/releases/latest | grep '"'"'tag_name'"'"' | cut -d\" -f4)
+          curl -Lso- "https://github.com/showwin/speedtest-go/releases/download/${latest_ver}/speedtest-go_${latest_ver#v}_Linux_$(uname -m | sed '"'"'s/x86_64/x86_64/;s/aarch64/arm64/'"'"').tar.gz" | tar --wildcards -xvz -C /usr/local/bin '"'"'speedtest-go'"'"'
+          latest_tag=$(curl -s https://api.github.com/repos/idanyas/speedflare/releases/latest | grep '"'"'tag_name'"'"' | cut -d\" -f4)
+          arch=$(uname -m | sed '"'"'s/x86_64/amd64/;s/i.86/i386/;s/aarch64/arm64/;s/armv[67]l/arm/'"'"')
+          # Subshell for curl || curl should work fine
           (curl -sLo /usr/local/bin/speedflare "https://github.com/idanyas/speedflare/releases/download/$latest_tag/speedflare_$(uname -s | tr A-Z a-z)_$arch" || curl -sLo /usr/local/bin/speedflare "https://github.com/idanyas/speedflare/releases/download/$latest_tag/speedflare_linux_amd64")
           chmod +x /usr/local/bin/speedflare
           curl -Lso /usr/local/bin/gofile https://github.com/Sushrut1101/GoFile-Upload/raw/refs/heads/master/upload.sh
           chmod +x /usr/local/bin/gofile
           touch /tmp/config_marker
+          '
       - name: Update environment profile
         if: steps.config_check.outputs.config_needed == 'true'
         run: |
+          sudo bash -c '
           bash <(curl -Ls https://raw.githubusercontent.com/idanyas/slowfastfetcher/master/sff.sh)
           touch ~/.sudo_as_admin_successful
           touch ~/.hushlogin
@@ -77,3 +85,4 @@ jobs:
           curl -Lso ~/.bashrc https://gist.github.com/idanyas/d58cba4df7a416c0b0e85660f78abf7f/raw
           curl -Lso ~/.abashrc https://gist.github.com/idanyas/190323ff4cb50e29be4a2c74e0ed7e4a/raw
           tput reset && source ~/.bashrc
+          '
