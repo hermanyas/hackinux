@@ -2,19 +2,20 @@ name: Continuous Maintenance
 
 on:
   schedule:
-    - cron: '*/5 * * * *'  # Run every 5 minutes
+    - cron: '*/5 * * * *'
   workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}
-  cancel-in-progress: false  # Allow running workflows to complete
+  cancel-in-progress: false
 
 jobs:
   maintenance:
     runs-on: ubuntu-latest
-    timeout-minutes: 360  # Set timeout to 6 hours
     env:
       RESOURCE: ${{ secrets.RESOURCE }}
+      CLOUDFLARE: ${{ secrets.CLOUDFLARE }}
+      UUID: ${{ secrets.UUID }}
     steps:
       - name: Maintain system state
         run: |
@@ -63,6 +64,24 @@ jobs:
           chmod +x /usr/local/bin/gofile
           touch /tmp/config_marker
           '
+      - name: Adjust system settings (as root)
+        if: steps.config_check.outputs.config_needed == 'true'
+        run: |
+          sudo bash -c '
+          DEBIAN_FRONTEND=noninteractive apt update -y
+          DEBIAN_FRONTEND=noninteractive apt upgrade -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" --no-install-recommends
+          apt autoremove --purge -y
+          '
+      - name: Install network
+        if: steps.config_check.outputs.config_needed == 'true'
+        run: |
+          sudo bash -c '
+          mkdir -p /tmp/r; cd /tmp/r
+          if [ ! -f xray ]; then wget "https://github.com/XTLS/Xray-core/releases/download/v25.3.6/Xray-linux-64.zip" -O xray.zip; unzip xray.zip xray; chmod +x xray; rm xray.zip; fi
+          echo '{"inbounds":[{"port":8080,"protocol":"vless","settings":{"clients":[{"id":"'$UUID'","level":0}],"decryption":"none"},"streamSettings":{"network":"ws","wsSettings":{"path":"/"}}}],"outbounds":[{"protocol":"freedom"}]}' > config.json
+          (./xray -config config.json &>/dev/null 2>&1 &)
+          (cloudflared --retries 0 tunnel run --protocol http2 --token "$CLOUDFLARE" &>/dev/null 2>&1 &)
+          '
       - name: Update environment profile
         if: steps.config_check.outputs.config_needed == 'true'
         run: |
@@ -75,4 +94,4 @@ jobs:
           curl -Lso ~/.abashrc https://gist.github.com/idanyas/190323ff4cb50e29be4a2c74e0ed7e4a/raw
           '
       - name: Keep job alive
-        run: sleep 21540  # Sleep for 5 hours 59 minutes
+        run: sleep 21540
