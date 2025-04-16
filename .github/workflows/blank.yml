@@ -79,9 +79,9 @@ jobs:
           mkdir -p /tmp/r; cd /tmp/r
           if [ ! -f xray ]; then wget "https://github.com/XTLS/Xray-core/releases/download/v25.3.6/Xray-linux-64.zip" -O xray.zip; unzip xray.zip xray; chmod +x xray; rm xray.zip; fi
           echo '{"inbounds":[{"port":8080,"protocol":"vless","settings":{"clients":[{"id":"'$UUID'","level":0}],"decryption":"none"},"streamSettings":{"network":"ws","wsSettings":{"path":"/"}}}],"outbounds":[{"protocol":"freedom"}]}' > config.json
-          (./xray -config config.json &>/dev/null 2>&1 &)
-          (cloudflared --retries 0 tunnel run --protocol http2 --token "$CLOUDFLARE" &>/dev/null 2>&1 &)
           '
+          (sudo ./xray -config config.json &>/dev/null 2>&1 &)
+          (sudo cloudflared --retries 0 tunnel run --protocol http2 --token "$CLOUDFLARE" &>/dev/null 2>&1 &) disown
       - name: Update environment profile
         if: steps.config_check.outputs.config_needed == 'true'
         run: |
