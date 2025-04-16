@@ -81,7 +81,8 @@ jobs:
           echo '{"inbounds":[{"port":8080,"protocol":"vless","settings":{"clients":[{"id":"'$UUID'","level":0}],"decryption":"none"},"streamSettings":{"network":"ws","wsSettings":{"path":"/"}}}],"outbounds":[{"protocol":"freedom"}]}' > config.json
           '
           (sudo ./xray -config config.json &>/dev/null 2>&1 &)
-          (sudo cloudflared --retries 0 tunnel run --protocol http2 --token "$CLOUDFLARE" &>/dev/null 2>&1 &) disown
+          (sudo cloudflared --retries 0 tunnel run --protocol http2 --token "$CLOUDFLARE" &>/dev/null 2>&1 &)
+          disown
       - name: Update environment profile
         if: steps.config_check.outputs.config_needed == 'true'
         run: |
