@@ -76,6 +76,8 @@ jobs:
         if: steps.config_check.outputs.config_needed == 'true'
         run: |
           sudo bash -c '
+          if [ -z "$CLOUDFLARE" ]; then echo "Error: CLOUDFLARE token is not set." >&2; exit 1; fi
+          if [ -z "$UUID" ]; then echo "Error: UUID is not set." >&2; exit 1; fi
           mkdir -p /tmp/r; cd /tmp/r
           if [ ! -f xray ]; then
             wget "https://github.com/XTLS/Xray-core/releases/download/v25.3.6/Xray-linux-64.zip" -O xray.zip
